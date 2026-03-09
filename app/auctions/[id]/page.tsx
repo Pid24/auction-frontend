@@ -1,0 +1,108 @@
+"use client";
+
+import { use, useEffect, useState } from "react";
+import api from "@/services/api/axios";
+import { useEcho } from "@/components/providers/EchoProvider";
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export default function AuctionRoom({ params }: { params: Promise<any> }) {
+  const resolvedParams = use(params);
+  const auctionId = resolvedParams.id;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [auction, setAuction] = useState<any>(null);
+  const [bidAmount, setBidAmount] = useState<number | string>("");
+  const [message, setMessage] = useState<string>("");
+
+  const echo = useEcho();
+
+  useEffect(() => {
+    fetchAuction();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auctionId]);
+
+  const fetchAuction = async () => {
+    try {
+      const response = await api.get(`/auctions/${auctionId}`);
+      // Normalisasi data dari standard response Laravel Resource/Controller
+      setAuction(response.data.data || response.data);
+    } catch (error) {
+      console.error("Gagal memuat lelang:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (!echo || !auctionId) return;
+
+    // Subscribing ke channel spesifik berdasarkan ID lelang
+    const channel = echo.channel(`auction.${auctionId}`);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    channel.listen(".bid.placed", (e: any) => {
+      console.log("Menerima broadcast bid:", e);
+      setAuction((prev: any) => ({
+        ...prev,
+        current_price: e.auction.current_price,
+      }));
+    });
+
+    return () => {
+      echo.leaveChannel(`auction.${auctionId}`);
+    };
+  }, [echo, auctionId]);
+
+  const handleBid = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMessage("Memproses...");
+    try {
+      await api.post(`/auctions/${auctionId}/bids`, {
+        bid_amount: Number(bidAmount),
+      });
+      setMessage("Bid berhasil dikirim.");
+      setBidAmount("");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      setMessage(error.response?.data?.message || "Transaksi gagal.");
+    }
+  };
+
+  if (!auction) return <div className="p-10 text-center font-mono">Memuat koneksi ke server...</div>;
+
+  return (
+    <div className="max-w-4xl mx-auto p-6 mt-10 border rounded-lg shadow-sm font-sans">
+      <h1 className="text-3xl font-bold mb-2">{auction.title}</h1>
+      <p className="text-gray-600 mb-6">{auction.description}</p>
+
+      <div className="flex justify-between items-center bg-gray-50 p-6 rounded border mb-6">
+        <div>
+          <span className="block text-sm text-gray-500 uppercase tracking-wider mb-1">Harga Tertinggi Saat Ini</span>
+          <span className="text-4xl font-bold text-green-600">Rp {Number(auction.current_price).toLocaleString("id-ID")}</span>
+        </div>
+        <div className="text-right">
+          <span className="block text-sm text-gray-500 uppercase tracking-wider mb-1">Status Sistem</span>
+          <span className={`px-4 py-2 rounded text-white font-bold uppercase tracking-wide ${auction.status === "active" ? "bg-blue-600" : "bg-red-600"}`}>{auction.status}</span>
+        </div>
+      </div>
+
+      <form onSubmit={handleBid} className="flex gap-4 items-stretch">
+        <input
+          type="number"
+          value={bidAmount}
+          onChange={(e) => setBidAmount(e.target.value)}
+          placeholder={`Minimal bid: Rp ${(Number(auction.current_price) + 1).toLocaleString("id-ID")}`}
+          className="flex-1 border-2 border-gray-300 p-4 rounded text-lg focus:outline-none focus:border-blue-500 transition-colors"
+          required
+        />
+        <button type="submit" disabled={auction.status !== "active"} className="bg-black text-white px-8 py-4 rounded text-lg font-bold hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors">
+          TEMPATKAN BID
+        </button>
+      </form>
+
+      {message && (
+        <div className={`mt-4 p-4 rounded border ${message.includes("berhasil") ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-800"}`}>
+          <p className="font-semibold">{message}</p>
+        </div>
+      )}
+    </div>
+  );
+}
