@@ -48,6 +48,9 @@ export default function Dashboard() {
           <Link href="/auctions/create" className="bg-green-600 text-white px-4 py-2 font-bold rounded hover:bg-green-800 transition-colors text-sm">
             BUAT LELANG
           </Link>
+          <Link href="/profile" className="bg-blue-600 text-white px-4 py-2 font-bold rounded hover:bg-blue-800 transition-colors text-sm">
+            PROFIL SAYA
+          </Link>
         </div>
         <button onClick={handleLogout} className="text-white bg-red-600 px-4 py-2 font-bold rounded hover:bg-red-800 transition-colors">
           LOGOUT TUGAS
