@@ -43,7 +43,12 @@ export default function Dashboard() {
   return (
     <div className="max-w-6xl mx-auto p-6 mt-10 font-sans">
       <div className="flex justify-between items-center mb-8 border-b pb-4">
-        <h1 className="text-3xl font-bold">Katalog Lelang Sistem</h1>
+        <div className="flex gap-4 items-center">
+          <h1 className="text-3xl font-bold">Katalog Lelang Sistem</h1>
+          <Link href="/auctions/create" className="bg-green-600 text-white px-4 py-2 font-bold rounded hover:bg-green-800 transition-colors text-sm">
+            BUAT LELANG
+          </Link>
+        </div>
         <button onClick={handleLogout} className="text-white bg-red-600 px-4 py-2 font-bold rounded hover:bg-red-800 transition-colors">
           LOGOUT TUGAS
         </button>
