@@ -3,6 +3,7 @@
 import { use, useEffect, useState } from "react";
 import api from "@/services/api/axios";
 import { useEcho } from "@/components/providers/EchoProvider";
+import { CountdownTimer } from "@/components/CountdownTimer";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default function AuctionRoom({ params }: { params: Promise<any> }) {
@@ -45,10 +46,16 @@ export default function AuctionRoom({ params }: { params: Promise<any> }) {
         ...prev,
         current_price: e.auction.current_price,
       }));
-      // Menyuntikkan bid terbaru ke urutan teratas array tanpa reload
+
       if (e.bid) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        setBids((prevBids: any[]) => [e.bid, ...prevBids]);
+        setBids((prevBids: any[]) => {
+          // Filter absolut: Cegah injeksi duplikat jika ID bid sudah ada di memori
+          const isDuplicate = prevBids.some((b) => b.id === e.bid.id);
+          if (isDuplicate) return prevBids;
+
+          return [e.bid, ...prevBids];
+        });
       }
     });
 
@@ -77,10 +84,15 @@ export default function AuctionRoom({ params }: { params: Promise<any> }) {
   return (
     <div className="max-w-4xl mx-auto p-6 mt-10 font-sans">
       <div className="border rounded-lg shadow-sm p-6 mb-6">
-        <h1 className="text-3xl font-bold mb-2">{auction.title}</h1>
+        <div className="flex justify-between items-start mb-2">
+          <h1 className="text-3xl font-bold">{auction.title}</h1>
+          <div className="text-right bg-gray-100 p-3 rounded-lg border">
+            <span className="block text-xs text-gray-500 uppercase tracking-wider mb-1">{auction.status === "pending" ? "Dimulai Dalam" : auction.status === "active" ? "Berakhir Dalam" : "Waktu"}</span>
+            {auction.status === "closed" ? <span className="text-xl font-mono font-bold text-gray-500 tracking-wider">SELESAI</span> : <CountdownTimer targetDate={auction.status === "pending" ? auction.start_time : auction.end_time} />}
+          </div>
+        </div>
         <p className="text-gray-600 mb-6">{auction.description}</p>
 
-        {/* Blok Deklarasi Pemenang */}
         {auction.status === "closed" && (
           <div className="bg-yellow-100 border-l-4 border-yellow-500 p-4 mb-6 rounded text-yellow-900">
             <h3 className="font-bold text-lg mb-1">LELANG TELAH DITUTUP</h3>
