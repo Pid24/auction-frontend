@@ -80,6 +80,20 @@ export default function AuctionRoom({ params }: { params: Promise<any> }) {
         <h1 className="text-3xl font-bold mb-2">{auction.title}</h1>
         <p className="text-gray-600 mb-6">{auction.description}</p>
 
+        {/* Blok Deklarasi Pemenang */}
+        {auction.status === "closed" && (
+          <div className="bg-yellow-100 border-l-4 border-yellow-500 p-4 mb-6 rounded text-yellow-900">
+            <h3 className="font-bold text-lg mb-1">LELANG TELAH DITUTUP</h3>
+            {bids.length > 0 ? (
+              <p>
+                Pemenang resmi: <span className="font-extrabold">{bids[0]?.user?.name || "Memuat..."}</span> dengan penawaran tertinggi <span className="font-extrabold">Rp {Number(bids[0]?.bid_amount).toLocaleString("id-ID")}</span>.
+              </p>
+            ) : (
+              <p className="italic">Lelang ditutup tanpa ada satu pun penawaran yang masuk.</p>
+            )}
+          </div>
+        )}
+
         <div className="flex justify-between items-center bg-gray-50 p-6 rounded border mb-6">
           <div>
             <span className="block text-sm text-gray-500 uppercase tracking-wider mb-1">Harga Tertinggi Saat Ini</span>
@@ -87,7 +101,7 @@ export default function AuctionRoom({ params }: { params: Promise<any> }) {
           </div>
           <div className="text-right">
             <span className="block text-sm text-gray-500 uppercase tracking-wider mb-1">Status Sistem</span>
-            <span className={`px-4 py-2 rounded text-white font-bold uppercase tracking-wide ${auction.status === "active" ? "bg-blue-600" : "bg-red-600"}`}>{auction.status}</span>
+            <span className={`px-4 py-2 rounded text-white font-bold uppercase tracking-wide ${auction.status === "active" ? "bg-blue-600" : auction.status === "pending" ? "bg-yellow-500" : "bg-red-600"}`}>{auction.status}</span>
           </div>
         </div>
 
@@ -99,6 +113,7 @@ export default function AuctionRoom({ params }: { params: Promise<any> }) {
             placeholder={`Minimal bid: Rp ${(Number(auction.current_price) + 1).toLocaleString("id-ID")}`}
             className="flex-1 border-2 border-gray-300 p-4 rounded text-lg focus:outline-none focus:border-blue-500 transition-colors"
             required
+            disabled={auction.status !== "active"}
           />
           <button type="submit" disabled={auction.status !== "active"} className="bg-black text-white px-8 py-4 rounded text-lg font-bold hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors">
             TEMPATKAN BID
