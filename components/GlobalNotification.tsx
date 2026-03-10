@@ -48,14 +48,14 @@ export function GlobalNotification() {
   if (outbidNotifs.length === 0 && winNotifs.length === 0) return null;
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3 font-sans">
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-3 font-sans w-full max-w-lg px-4 text-center">
       {outbidNotifs.map((notif, i) => (
-        <div key={`outbid-${i}`} className="bg-red-600 border-l-4 border-black text-white px-6 py-4 rounded shadow-2xl font-bold animate-bounce">
+        <div key={`outbid-${i}`} className="bg-red-600 border-l-4 border-black text-white px-6 py-4 rounded shadow-2xl font-bold animate-bounce w-full">
           {notif}
         </div>
       ))}
       {winNotifs.map((notif, i) => (
-        <div key={`win-${i}`} className="bg-green-600 border-l-4 border-black text-white px-6 py-4 rounded shadow-2xl font-bold animate-bounce">
+        <div key={`win-${i}`} className="bg-green-600 border-l-4 border-black text-white px-6 py-4 rounded shadow-2xl font-bold animate-bounce w-full">
           {notif}
         </div>
       ))}
