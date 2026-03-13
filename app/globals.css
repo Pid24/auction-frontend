@@ -32,8 +32,9 @@
   --shadow-cyan-glow: var(--shadow-cyan-glow);
   --shadow-blue-glow: var(--shadow-blue-glow);
 
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Registrasi Font P3R */
+  --font-sans: var(--font-chakra), sans-serif;
+  --font-mono: var(--font-inter), monospace;
 }
 
 /* Neutralisir preferensi OS pengguna. Tema P3R secara default adalah Dark Mode mutlak. */

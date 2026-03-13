@@ -1,22 +1,23 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Chakra_Petch, Inter } from "next/font/google";
 import "./globals.css";
 import { EchoProvider } from "@/components/providers/EchoProvider";
 import { GlobalNotification } from "@/components/GlobalNotification";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const chakra = Chakra_Petch({
+  weight: ["300", "400", "500", "600", "700"],
   subsets: ["latin"],
+  variable: "--font-chakra",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const inter = Inter({
   subsets: ["latin"],
+  variable: "--font-inter",
 });
 
 export const metadata: Metadata = {
-  title: "Real-Time Auction",
-  description: "Sistem Lelang Real-Time",
+  title: "Auction Hub | System",
+  description: "Operative Real-Time Auction System",
 };
 
 export default function RootLayout({
@@ -26,7 +27,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className={`${chakra.variable} ${inter.variable} antialiased`}>
         <EchoProvider>
           <GlobalNotification />
           {children}
