@@ -68,7 +68,7 @@ export default function AdminDashboard() {
       <div className="max-w-7xl mx-auto relative z-10 mb-6 flex justify-between items-end border-b-2 border-red-600 pb-4">
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
           <h1 className="text-4xl md:text-5xl font-black italic tracking-widest text-p3-white uppercase drop-shadow-md">
-            Overwatch <span className="text-red-500">Panel</span>
+            Admin <span className="text-red-500">Panel</span>
           </h1>
           <p className="text-red-500/80 font-mono text-sm tracking-widest mt-2 font-bold">/// LEVEL 5 CLEARANCE ACCEPTED</p>
         </motion.div>
@@ -128,7 +128,7 @@ export default function AdminDashboard() {
                           className="bg-red-600 text-white px-6 py-2 text-xs font-black italic tracking-widest uppercase hover:bg-red-800 transition-colors"
                           style={{ clipPath: "polygon(10% 0, 100% 0, 90% 100%, 0% 100%)" }}
                         >
-                          PURGE
+                          Delete
                         </button>
                       </td>
                     </motion.tr>
