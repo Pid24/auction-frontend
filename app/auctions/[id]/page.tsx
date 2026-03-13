@@ -7,6 +7,9 @@ import { useEcho } from "@/components/providers/EchoProvider";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { motion, AnimatePresence } from "framer-motion";
 
+// Sesuaikan URL ini dengan port peladen Laravel Anda jika berbeda
+const STORAGE_URL = process.env.NEXT_PUBLIC_BACKEND_URL ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/storage` : "http://localhost:8000/storage";
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default function AuctionRoom({ params }: { params: Promise<any> }) {
   const resolvedParams = use(params);
@@ -16,6 +19,9 @@ export default function AuctionRoom({ params }: { params: Promise<any> }) {
   const [auction, setAuction] = useState<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [bids, setBids] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [activeImage, setActiveImage] = useState<any>(null);
+
   const [bidAmount, setBidAmount] = useState<number | string>("");
   const [message, setMessage] = useState<string>("");
 
@@ -32,8 +38,14 @@ export default function AuctionRoom({ params }: { params: Promise<any> }) {
       const data = response.data.data || response.data;
       setAuction(data);
       setBids(data.bids || []);
+
+      // Tetapkan gambar utama (primary) atau gambar pertama sebagai default saat dimuat
+      if (data.media && data.media.length > 0) {
+        const primaryImage = data.media.find((m: any) => m.is_primary) || data.media[0];
+        setActiveImage(primaryImage);
+      }
     } catch (error) {
-      console.error("Gagal memuat lelang:", error);
+      console.error("Transmission failed:", error);
     }
   };
 
@@ -107,12 +119,49 @@ export default function AuctionRoom({ params }: { params: Promise<any> }) {
       </div>
 
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 relative z-10">
-        {/* LEFT COLUMN: Item Info */}
+        {/* LEFT COLUMN: Item Info & Gallery */}
         <div className="lg:col-span-7 flex flex-col gap-6">
-          <motion.div initial={{ x: -50, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="bg-p3-dark/60 border border-p3-blue p-8 relative" style={{ clipPath: "polygon(0 0, 100% 0, 100% 90%, 95% 100%, 0 100%)" }}>
+          <motion.div initial={{ x: -50, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="bg-p3-dark/60 border border-p3-blue p-8 relative" style={{ clipPath: "polygon(0 0, 100% 0, 100% 95%, 95% 100%, 0 100%)" }}>
             <div className="absolute top-0 left-0 w-2 h-full bg-p3-cyan" />
-            <h1 className="text-4xl md:text-5xl font-black italic tracking-widest text-p3-white uppercase mb-4 drop-shadow-md">{auction.title}</h1>
-            <p className="text-gray-400 text-lg leading-relaxed">{auction.description}</p>
+
+            <h1 className="text-4xl md:text-5xl font-black italic tracking-widest text-p3-white uppercase mb-6 drop-shadow-md">{auction.title}</h1>
+
+            {/* Visual Asset Gallery */}
+            {auction.media && auction.media.length > 0 && (
+              <div className="mb-8 border-b border-p3-blue/50 pb-8">
+                {/* Main Render Image */}
+                <div className="relative w-full aspect-video bg-p3-blue/10 border-2 border-p3-blue mb-4 overflow-hidden group" style={{ clipPath: "polygon(0 0, 100% 0, 100% 92%, 95% 100%, 0 100%)" }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={`${STORAGE_URL}/${activeImage.file_path}`} alt="Asset Primary" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                  <div className="absolute top-0 left-0 bg-p3-cyan text-p3-dark px-4 py-1 font-black italic uppercase tracking-widest text-xs shadow-cyan-glow" style={{ clipPath: "polygon(0 0, 100% 0, 90% 100%, 0% 100%)" }}>
+                    VISUAL DATA
+                  </div>
+                </div>
+
+                {/* Thumbnail Grid */}
+                {auction.media.length > 1 && (
+                  <div className="flex gap-4 overflow-x-auto custom-scrollbar pb-2">
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                    {auction.media.map((media: any) => (
+                      <motion.div
+                        key={media.id}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setActiveImage(media)}
+                        className={`relative w-24 h-24 shrink-0 cursor-pointer border-2 transition-all ${activeImage?.id === media.id ? "border-p3-cyan shadow-cyan-glow" : "border-p3-blue opacity-50 hover:opacity-100"}`}
+                        style={{ clipPath: "polygon(0 0, 100% 0, 100% 85%, 85% 100%, 0 100%)" }}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={`${STORAGE_URL}/${media.file_path}`} alt="Thumbnail" className="w-full h-full object-cover" />
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <h3 className="text-p3-cyan text-sm font-black italic tracking-widest uppercase mb-2">Description Parameters:</h3>
+            <p className="text-gray-400 text-lg leading-relaxed whitespace-pre-wrap">{auction.description}</p>
           </motion.div>
 
           {/* Winner Banner */}

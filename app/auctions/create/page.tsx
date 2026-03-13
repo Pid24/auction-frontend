@@ -15,11 +15,19 @@ export default function CreateAuction() {
     start_time: "",
     end_time: "",
   });
+  const [images, setImages] = useState<File[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      // Mengonversi FileList menjadi Array standar
+      setImages(Array.from(e.target.files));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -28,14 +36,29 @@ export default function CreateAuction() {
     setError("");
 
     try {
-      await api.post("/auctions", {
-        ...formData,
-        starting_price: Number(formData.starting_price),
+      // Konstruksi FormData untuk multipart/form-data
+      const payload = new FormData();
+      payload.append("title", formData.title);
+      payload.append("description", formData.description);
+      payload.append("starting_price", formData.starting_price);
+      payload.append("start_time", formData.start_time);
+      payload.append("end_time", formData.end_time);
+
+      // Injeksi array gambar ke dalam payload
+      images.forEach((image, index) => {
+        payload.append(`images[${index}]`, image);
       });
+
+      await api.post("/auctions", payload, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
       router.push("/");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
-      setError(err.response?.data?.message || "Validation failed. Please verify your input parameters.");
+      setError(err.response?.data?.message || "Validation failed. Please verify your input parameters or file size (Max 5MB).");
     } finally {
       setIsLoading(false);
     }
@@ -60,7 +83,7 @@ export default function CreateAuction() {
 
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
           <h1 className="text-4xl font-black italic tracking-widest text-p3-white uppercase drop-shadow-md border-b-2 border-p3-cyan pb-4 inline-block pr-12" style={{ clipPath: "polygon(0 0, 100% 0, 95% 100%, 0% 100%)" }}>
-            Initialize <span className="text-p3-cyan">Auction</span>
+            Initialize <span className="text-p3-cyan">Asset</span>
           </h1>
         </motion.div>
 
@@ -107,6 +130,21 @@ export default function CreateAuction() {
               required
               style={{ clipPath: "polygon(0 0, 100% 0, 99% 100%, 0% 100%)" }}
             />
+          </div>
+
+          {/* Sistem Upload Multi-Gambar */}
+          <div>
+            <label className="block text-xs font-bold text-p3-cyan uppercase tracking-widest opacity-80 mb-2">Visual Data (Upload Media)</label>
+            <div className="w-full p-4 bg-p3-blue/10 border-b-2 border-p3-blue text-p3-white font-bold focus-within:border-p3-cyan focus-within:bg-p3-blue/20 transition-all" style={{ clipPath: "polygon(0 0, 100% 0, 98% 100%, 0% 100%)" }}>
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleImageChange}
+                className="w-full text-sm text-p3-white file:mr-4 file:py-2 file:px-6 file:rounded-none file:border-0 file:text-sm file:font-black file:italic file:uppercase file:tracking-widest file:bg-p3-blue file:text-p3-white hover:file:bg-p3-cyan hover:file:text-p3-dark file:transition-colors cursor-pointer"
+              />
+              {images.length > 0 && <div className="mt-3 text-xs text-p3-cyan/80 font-mono">{images.length} file(s) attached for transmission.</div>}
+            </div>
           </div>
 
           <div>
