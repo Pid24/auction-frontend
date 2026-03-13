@@ -87,7 +87,7 @@ export default function Dashboard() {
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         {auctions.length === 0 ? (
           <div className="text-center py-20 border border-p3-blue bg-p3-dark/50 text-p3-cyan font-mono tracking-widest" style={{ clipPath: "polygon(2% 0, 100% 0, 98% 100%, 0% 100%)" }}>
-            [ NO ACTIVE OPERATIONS DETECTED ]
+            [ NO ACTIVE AUCTIONS DETECTED ]
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

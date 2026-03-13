@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import api from "@/services/api/axios";
 import { motion } from "framer-motion";
 
@@ -103,6 +104,12 @@ export default function Login() {
             {isLoading ? "AUTHENTICATING..." : "INITIALIZE LOGIN"}
           </motion.button>
         </form>
+
+        <div className="text-center mt-2 border-t border-p3-blue/30 pt-4">
+          <Link href="/register" className="text-xs font-bold text-p3-cyan/80 uppercase tracking-widest hover:text-p3-cyan transition-colors">
+            UNREGISTERED? REQUEST AUTHORIZATION
+          </Link>
+        </div>
       </motion.div>
     </div>
   );
