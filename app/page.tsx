@@ -9,6 +9,7 @@ import { motion } from "framer-motion";
 export default function Dashboard() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [auctions, setAuctions] = useState<any[]>([]);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
@@ -18,15 +19,22 @@ export default function Dashboard() {
       router.push("/login");
       return;
     }
-    fetchAuctions();
-  }, [router]);
+    initializeSystem();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const fetchAuctions = async () => {
+  const initializeSystem = async () => {
     try {
-      const response = await api.get("/auctions");
-      setAuctions(response.data.data || response.data);
+      // Eksekusi pemanggilan paralel untuk efisiensi waktu muat (load time)
+      const [userResponse, auctionsResponse] = await Promise.all([api.get("/user"), api.get("/auctions")]);
+
+      setUserRole(userResponse.data.role);
+      setAuctions(auctionsResponse.data.data || auctionsResponse.data);
     } catch (error) {
-      console.error("Transmission failed:", error);
+      console.error("System initialization failed:", error);
+      // Jika token tidak valid atau kedaluwarsa, paksa keluar
+      localStorage.removeItem("access_token");
+      router.push("/login");
     } finally {
       setIsLoading(false);
     }
@@ -61,7 +69,18 @@ export default function Dashboard() {
             </h1>
           </motion.div>
 
-          <motion.div initial={{ x: 30, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ duration: 0.4 }} className="flex gap-4 items-center">
+          <motion.div initial={{ x: 30, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ duration: 0.4 }} className="flex flex-wrap gap-4 items-center justify-end">
+            {/* Render Tombol Overwatch Eksklusif untuk Administrator */}
+            {userRole === "admin" && (
+              <Link
+                href="/admin"
+                className="px-6 py-2 bg-red-600/20 border-2 border-red-600 text-red-500 font-bold italic tracking-wider uppercase transition-all hover:bg-red-600 hover:text-p3-white shadow-[0_0_10px_rgba(220,38,38,0.5)]"
+                style={{ clipPath: "polygon(10% 0, 100% 0, 90% 100%, 0% 100%)" }}
+              >
+                Admin
+              </Link>
+            )}
+
             <Link
               href="/auctions/create"
               className="px-6 py-2 bg-p3-blue text-p3-white font-bold italic tracking-wider uppercase transition-all hover:bg-p3-cyan hover:text-p3-dark"
