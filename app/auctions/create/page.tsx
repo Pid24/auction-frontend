@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import api from "@/services/api/axios";
+import { motion } from "framer-motion";
 
 export default function CreateAuction() {
   const router = useRouter();
@@ -30,58 +32,149 @@ export default function CreateAuction() {
         ...formData,
         starting_price: Number(formData.starting_price),
       });
-      // Redirect kembali ke dashboard setelah berhasil
       router.push("/");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
-      setError(err.response?.data?.message || "Validasi gagal. Periksa kembali input Anda.");
+      setError(err.response?.data?.message || "Validation failed. Please verify your input parameters.");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="max-w-3xl mx-auto p-6 mt-10 font-sans">
-      <h1 className="text-3xl font-bold mb-8 border-b pb-4">Buat Lelang Baru</h1>
+    <div className="min-h-screen bg-p3-dark font-sans relative overflow-hidden pt-16 pb-20 px-6">
+      {/* Background Ornament */}
+      <div className="fixed top-0 left-0 w-1/3 h-screen bg-p3-cyan/5 pointer-events-none z-0" style={{ clipPath: "polygon(0 0, 100% 0, 70% 100%, 0% 100%)" }} />
 
-      {error && <div className="bg-red-50 text-red-700 p-4 rounded mb-6 border border-red-200 font-semibold">{error}</div>}
+      <div className="max-w-3xl mx-auto relative z-10">
+        {/* Return Button */}
+        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="mb-6">
+          <Link
+            href="/"
+            className="inline-block px-8 py-2 bg-transparent border-2 border-p3-cyan text-p3-cyan font-bold italic tracking-widest uppercase transition-colors hover:bg-p3-cyan hover:text-p3-dark"
+            style={{ clipPath: "polygon(10% 0, 100% 0, 90% 100%, 0% 100%)" }}
+          >
+            &#171; BACK
+          </Link>
+        </motion.div>
 
-      <form onSubmit={handleSubmit} className="space-y-6 bg-white p-8 border rounded-lg shadow-sm">
-        <div>
-          <label className="block text-sm font-bold text-gray-700 mb-2">Nama Barang</label>
-          <input type="text" name="title" value={formData.title} onChange={handleChange} className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:border-black" required />
-        </div>
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+          <h1 className="text-4xl font-black italic tracking-widest text-p3-white uppercase drop-shadow-md border-b-2 border-p3-cyan pb-4 inline-block pr-12" style={{ clipPath: "polygon(0 0, 100% 0, 95% 100%, 0% 100%)" }}>
+            Initialize <span className="text-p3-cyan">Auction</span>
+          </h1>
+        </motion.div>
 
-        <div>
-          <label className="block text-sm font-bold text-gray-700 mb-2">Deskripsi</label>
-          <textarea name="description" value={formData.description} onChange={handleChange} rows={4} className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:border-black" required />
-        </div>
+        {error && (
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="bg-red-900/40 text-red-400 p-4 mb-6 border-l-4 border-red-500 font-bold tracking-widest uppercase italic text-sm">
+            [SYSTEM ERROR] {error}
+          </motion.div>
+        )}
 
-        <div>
-          <label className="block text-sm font-bold text-gray-700 mb-2">Harga Buka (Rp)</label>
-          <input type="number" name="starting_price" value={formData.starting_price} onChange={handleChange} min="1" className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:border-black" required />
-        </div>
+        <motion.form
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4 }}
+          onSubmit={handleSubmit}
+          className="bg-p3-dark/80 p-8 border border-p3-blue shadow-blue-glow relative flex flex-col gap-6"
+          style={{ clipPath: "polygon(0 0, 100% 0, 100% 95%, 96% 100%, 0 100%)" }}
+        >
+          {/* Left Line Accent */}
+          <div className="absolute top-0 left-0 w-1 h-full bg-p3-cyan" />
 
-        <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">Waktu Mulai</label>
-            <input type="datetime-local" name="start_time" value={formData.start_time} onChange={handleChange} className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:border-black" required />
+            <label className="block text-xs font-bold text-p3-cyan uppercase tracking-widest opacity-80 mb-2">Asset / Entity Name</label>
+            <input
+              type="text"
+              name="title"
+              value={formData.title}
+              onChange={handleChange}
+              className="w-full p-4 bg-p3-blue/10 border-b-2 border-p3-blue text-p3-white font-bold text-lg focus:outline-none focus:border-p3-cyan focus:bg-p3-blue/20 transition-all placeholder-p3-blue/50"
+              placeholder="Input asset identity..."
+              required
+              style={{ clipPath: "polygon(0 0, 100% 0, 98% 100%, 0% 100%)" }}
+            />
           </div>
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">Waktu Selesai</label>
-            <input type="datetime-local" name="end_time" value={formData.end_time} onChange={handleChange} className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:border-black" required />
-          </div>
-        </div>
 
-        <div className="pt-4 border-t flex justify-end gap-4">
-          <button type="button" onClick={() => router.push("/")} className="px-6 py-3 font-bold text-gray-600 bg-gray-100 rounded hover:bg-gray-200 transition-colors">
-            BATAL
-          </button>
-          <button type="submit" disabled={isLoading} className="bg-black text-white px-8 py-3 rounded font-bold hover:bg-gray-800 disabled:bg-gray-400 transition-colors">
-            {isLoading ? "MENYIMPAN..." : "SIMPAN LELANG"}
-          </button>
-        </div>
-      </form>
+          <div>
+            <label className="block text-xs font-bold text-p3-cyan uppercase tracking-widest opacity-80 mb-2">Description Parameters</label>
+            <textarea
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              rows={4}
+              className="w-full p-4 bg-p3-blue/10 border-b-2 border-p3-blue text-p3-white font-bold focus:outline-none focus:border-p3-cyan focus:bg-p3-blue/20 transition-all placeholder-p3-blue/50 custom-scrollbar"
+              placeholder="Specify asset details..."
+              required
+              style={{ clipPath: "polygon(0 0, 100% 0, 99% 100%, 0% 100%)" }}
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-p3-cyan uppercase tracking-widest opacity-80 mb-2">Starting Value (IDR)</label>
+            <input
+              type="number"
+              name="starting_price"
+              value={formData.starting_price}
+              onChange={handleChange}
+              min="1"
+              className="w-full p-4 bg-p3-blue/10 border-b-2 border-p3-blue text-p3-white font-bold text-lg focus:outline-none focus:border-p3-cyan focus:bg-p3-blue/20 transition-all placeholder-p3-blue/50"
+              placeholder="Example: 150000"
+              required
+              style={{ clipPath: "polygon(0 0, 100% 0, 98% 100%, 0% 100%)" }}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-xs font-bold text-p3-cyan uppercase tracking-widest opacity-80 mb-2">Commencement (Start)</label>
+              <input
+                type="datetime-local"
+                name="start_time"
+                value={formData.start_time}
+                onChange={handleChange}
+                className="w-full p-4 bg-p3-blue/10 border-b-2 border-p3-blue text-p3-white font-bold focus:outline-none focus:border-p3-cyan focus:bg-p3-blue/20 transition-all"
+                required
+                style={{ clipPath: "polygon(0 0, 100% 0, 96% 100%, 0% 100%)" }}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-p3-cyan uppercase tracking-widest opacity-80 mb-2">Termination (End)</label>
+              <input
+                type="datetime-local"
+                name="end_time"
+                value={formData.end_time}
+                onChange={handleChange}
+                className="w-full p-4 bg-p3-blue/10 border-b-2 border-p3-blue text-p3-white font-bold focus:outline-none focus:border-p3-cyan focus:bg-p3-blue/20 transition-all"
+                required
+                style={{ clipPath: "polygon(0 0, 100% 0, 96% 100%, 0% 100%)" }}
+              />
+            </div>
+          </div>
+
+          <div className="pt-6 mt-2 border-t border-p3-blue/50 flex flex-col md:flex-row justify-end gap-4">
+            <motion.button
+              type="button"
+              onClick={() => router.push("/")}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="px-8 py-4 bg-transparent border-2 border-p3-cyan text-p3-cyan font-black italic uppercase tracking-widest transition-colors hover:bg-p3-cyan hover:text-p3-dark"
+              style={{ clipPath: "polygon(10% 0, 100% 0, 90% 100%, 0% 100%)" }}
+            >
+              Abort
+            </motion.button>
+            <motion.button
+              type="submit"
+              disabled={isLoading}
+              whileHover={{ scale: isLoading ? 1 : 1.05, filter: "drop-shadow(0 0 10px var(--color-p3-cyan))" }}
+              whileTap={{ scale: isLoading ? 1 : 0.95 }}
+              className="bg-p3-blue text-p3-white px-10 py-4 font-black italic uppercase tracking-widest disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed transition-colors"
+              style={{ clipPath: "polygon(10% 0, 100% 0, 90% 100%, 0% 100%)" }}
+            >
+              {isLoading ? "TRANSMITTING..." : "EXECUTE AUCTION"}
+            </motion.button>
+          </div>
+        </motion.form>
+      </div>
     </div>
   );
 }

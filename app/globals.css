@@ -1,26 +1,53 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* P3R Global Theme */
+  --background: #040b16; /* P3 Dark */
+  --foreground: #f8f9fa; /* P3 White */
+
+  /* P3R Custom Color Palette */
+  --color-p3-dark: #040b16;
+  --color-p3-blue: #0047ab;
+  --color-p3-cyan: #00e5ff;
+  --color-p3-white: #f8f9fa;
+  --color-p3-glass: rgba(4, 11, 22, 0.6);
+
+  /* P3R Custom Shadows (Neon Glow) */
+  --shadow-cyan-glow: 0 0 15px rgba(0, 229, 255, 0.5);
+  --shadow-blue-glow: 0 0 20px rgba(0, 71, 171, 0.6);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+
+  /* Registrasi utilitas Tailwind (misal: bg-p3-blue, text-p3-cyan) */
+  --color-p3-dark: var(--color-p3-dark);
+  --color-p3-blue: var(--color-p3-blue);
+  --color-p3-cyan: var(--color-p3-cyan);
+  --color-p3-white: var(--color-p3-white);
+  --color-p3-glass: var(--color-p3-glass);
+
+  /* Registrasi utilitas Shadow */
+  --shadow-cyan-glow: var(--shadow-cyan-glow);
+  --shadow-blue-glow: var(--shadow-blue-glow);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
+/* Neutralisir preferensi OS pengguna. Tema P3R secara default adalah Dark Mode mutlak. */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #040b16;
+    --foreground: #f8f9fa;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  /* Tambahan: Mencegah scrollbar default yang merusak estetika gelap */
+  color-scheme: dark;
 }
