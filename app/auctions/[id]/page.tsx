@@ -171,7 +171,7 @@ export default function AuctionRoom({ params }: { params: Promise<any> }) {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={`${STORAGE_URL}/${activeImage.file_path}`} alt="Asset Primary" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                   <div className="absolute top-0 left-0 bg-p3-cyan text-p3-dark px-4 py-1 font-black italic uppercase tracking-widest text-xs shadow-cyan-glow" style={{ clipPath: "polygon(0 0, 100% 0, 90% 100%, 0% 100%)" }}>
-                    VISUAL DATA
+                    IMAGE
                   </div>
                 </div>
 
@@ -196,7 +196,7 @@ export default function AuctionRoom({ params }: { params: Promise<any> }) {
               </div>
             )}
 
-            <h3 className="text-p3-cyan text-sm font-black italic tracking-widest uppercase mb-2">Description Parameters:</h3>
+            <h3 className="text-p3-cyan text-sm font-black italic tracking-widest uppercase mb-2">Description:</h3>
             <p className="text-gray-400 text-lg leading-relaxed whitespace-pre-wrap">{auction.description}</p>
           </motion.div>
 

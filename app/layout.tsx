@@ -3,6 +3,7 @@ import { Chakra_Petch, Inter } from "next/font/google";
 import "./globals.css";
 import { EchoProvider } from "@/components/providers/EchoProvider";
 import { GlobalNotification } from "@/components/GlobalNotification";
+import { Header } from "@/components/Header"; // INJEKSI HEADER
 import { Footer } from "@/components/Footer";
 
 const chakra = Chakra_Petch({
@@ -28,10 +29,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${chakra.variable} ${inter.variable} antialiased bg-p3-dark`}>
+      <body className={`${chakra.variable} ${inter.variable} antialiased bg-p3-dark flex flex-col min-h-screen`}>
         <EchoProvider>
           <GlobalNotification />
-          <main className="min-h-screen">{children}</main>
+          <Header /> {/* RENDER HEADER SECARA GLOBAL */}
+          <main className="flex-grow">{children}</main>
           <Footer />
         </EchoProvider>
       </body>

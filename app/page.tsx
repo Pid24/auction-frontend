@@ -5,19 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import api from "@/services/api/axios";
 import { motion } from "framer-motion";
-import { useEcho } from "@/components/providers/EchoProvider";
 
 export default function Dashboard() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [auctions, setAuctions] = useState<any[]>([]);
-  const [userRole, setUserRole] = useState<string | null>(null);
-  const [userId, setUserId] = useState<number | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [wallet, setWallet] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-
   const router = useRouter();
-  const echo = useEcho();
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
@@ -25,128 +18,36 @@ export default function Dashboard() {
       router.push("/login");
       return;
     }
-    initializeSystem();
+    fetchAuctions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Listener WebSocket Khusus Sinkronisasi Dompet
-  useEffect(() => {
-    if (!echo || !userId) return;
-
-    const channel = echo.private(`user.${userId}`);
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    channel.listen(".auction.won", () => {
-      syncWallet();
-    });
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    channel.listen(".outbid.notification", () => {
-      syncWallet();
-    });
-
-    return () => {
-      echo.leaveChannel(`user.${userId}`);
-    };
-  }, [echo, userId]);
-
-  const syncWallet = async () => {
+  const fetchAuctions = async () => {
     try {
-      const response = await api.get("/user");
-      setWallet(response.data.wallet);
+      const response = await api.get("/auctions");
+      setAuctions(response.data.data || response.data);
     } catch (error) {
-      console.error("Gagal menyinkronkan data dompet:", error);
-    }
-  };
-
-  const initializeSystem = async () => {
-    try {
-      const [userResponse, auctionsResponse] = await Promise.all([api.get("/user"), api.get("/auctions")]);
-
-      setUserId(userResponse.data.id);
-      setUserRole(userResponse.data.role);
-      setWallet(userResponse.data.wallet); // Menangkap entitas dompet
-      setAuctions(auctionsResponse.data.data || auctionsResponse.data);
-    } catch (error) {
-      console.error("System initialization failed:", error);
-      localStorage.removeItem("access_token");
+      console.error("Transmission failed:", error);
       router.push("/login");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("access_token");
-    router.push("/login");
-  };
-
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-p3-dark">
+      <div className="min-h-[80vh] flex items-center justify-center bg-p3-dark">
         <motion.div animate={{ opacity: [0.3, 1, 0.3], scale: [0.98, 1.02, 0.98] }} transition={{ repeat: Infinity, duration: 1.5 }} className="text-p3-cyan text-2xl font-black italic tracking-widest uppercase">
-          Establishing Connection...
+          Extracting Entities...
         </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-p3-dark font-sans relative overflow-hidden pb-12">
-      {/* Background Ornament */}
+    <div className="bg-transparent font-sans relative overflow-hidden pb-12 pt-10">
       <div className="fixed top-0 right-0 w-2/3 h-screen bg-p3-blue/10 pointer-events-none z-0" style={{ clipPath: "polygon(20% 0, 100% 0, 100% 100%, 0% 100%)" }} />
 
-      {/* HEADER / NAVBAR */}
-      <nav className="relative z-50 bg-p3-dark/80 backdrop-blur-md border-b border-p3-cyan shadow-cyan-glow mb-10">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
-          <motion.div initial={{ x: -30, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ duration: 0.4 }}>
-            <h1 className="text-3xl md:text-4xl font-black italic tracking-widest text-p3-white uppercase drop-shadow-md">
-              <span className="text-p3-cyan">Auction</span> Hub
-            </h1>
-          </motion.div>
-
-          <motion.div initial={{ x: 30, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ duration: 0.4 }} className="flex flex-wrap gap-4 items-center justify-end">
-            {/* Financial HUD Panel */}
-            {wallet && (
-              <div className="flex flex-col text-right mr-2 border-r border-p3-blue/50 pr-6">
-                <span className="text-[10px] font-bold text-p3-cyan uppercase tracking-widest opacity-80 mb-0.5">Available Funds</span>
-                <span className="text-sm font-black italic text-p3-white tracking-widest drop-shadow-sm">Rp {Number(wallet.balance - wallet.frozen_balance).toLocaleString("id-ID")}</span>
-                {Number(wallet.frozen_balance) > 0 && <span className="text-[10px] font-bold text-red-400 tracking-widest mt-0.5">[HOLD: Rp {Number(wallet.frozen_balance).toLocaleString("id-ID")}]</span>}
-              </div>
-            )}
-
-            {userRole === "admin" && (
-              <Link
-                href="/admin"
-                className="px-6 py-2 bg-red-600/20 border-2 border-red-600 text-red-500 font-bold italic tracking-wider uppercase transition-all hover:bg-red-600 hover:text-p3-white shadow-[0_0_10px_rgba(220,38,38,0.5)]"
-                style={{ clipPath: "polygon(10% 0, 100% 0, 90% 100%, 0% 100%)" }}
-              >
-                Overwatch
-              </Link>
-            )}
-
-            <Link
-              href="/auctions/create"
-              className="px-6 py-2 bg-p3-blue text-p3-white font-bold italic tracking-wider uppercase transition-all hover:bg-p3-cyan hover:text-p3-dark"
-              style={{ clipPath: "polygon(10% 0, 100% 0, 90% 100%, 0% 100%)" }}
-            >
-              Initialize
-            </Link>
-            <Link
-              href="/profile"
-              className="px-6 py-2 bg-transparent border-2 border-p3-cyan text-p3-cyan font-bold italic tracking-wider uppercase transition-all hover:bg-p3-cyan hover:text-p3-dark"
-              style={{ clipPath: "polygon(10% 0, 100% 0, 90% 100%, 0% 100%)" }}
-            >
-              Profile
-            </Link>
-            <button onClick={handleLogout} className="px-6 py-2 bg-red-600 text-white font-bold italic tracking-wider uppercase transition-all hover:bg-red-500" style={{ clipPath: "polygon(10% 0, 100% 0, 90% 100%, 0% 100%)" }}>
-              Logout
-            </button>
-          </motion.div>
-        </div>
-      </nav>
-
-      {/* MAIN CONTENT */}
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         {auctions.length === 0 ? (
           <div className="text-center py-20 border border-p3-blue bg-p3-dark/50 text-p3-cyan font-mono tracking-widest" style={{ clipPath: "polygon(2% 0, 100% 0, 98% 100%, 0% 100%)" }}>

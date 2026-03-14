@@ -83,7 +83,7 @@ export default function CreateAuction() {
 
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
           <h1 className="text-4xl font-black italic tracking-widest text-p3-white uppercase drop-shadow-md border-b-2 border-p3-cyan pb-4 inline-block pr-12" style={{ clipPath: "polygon(0 0, 100% 0, 95% 100%, 0% 100%)" }}>
-            Initialize <span className="text-p3-cyan">Asset</span>
+            Create <span className="text-p3-cyan">Auction</span>
           </h1>
         </motion.div>
 
@@ -105,7 +105,7 @@ export default function CreateAuction() {
           <div className="absolute top-0 left-0 w-1 h-full bg-p3-cyan" />
 
           <div>
-            <label className="block text-xs font-bold text-p3-cyan uppercase tracking-widest opacity-80 mb-2">Asset / Entity Name</label>
+            <label className="block text-xs font-bold text-p3-cyan uppercase tracking-widest opacity-80 mb-2">Entity Name</label>
             <input
               type="text"
               name="title"
@@ -119,7 +119,7 @@ export default function CreateAuction() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-p3-cyan uppercase tracking-widest opacity-80 mb-2">Description Parameters</label>
+            <label className="block text-xs font-bold text-p3-cyan uppercase tracking-widest opacity-80 mb-2">Description</label>
             <textarea
               name="description"
               value={formData.description}
@@ -134,7 +134,7 @@ export default function CreateAuction() {
 
           {/* Sistem Upload Multi-Gambar */}
           <div>
-            <label className="block text-xs font-bold text-p3-cyan uppercase tracking-widest opacity-80 mb-2">Visual Data (Upload Media)</label>
+            <label className="block text-xs font-bold text-p3-cyan uppercase tracking-widest opacity-80 mb-2">Upload Image</label>
             <div className="w-full p-4 bg-p3-blue/10 border-b-2 border-p3-blue text-p3-white font-bold focus-within:border-p3-cyan focus-within:bg-p3-blue/20 transition-all" style={{ clipPath: "polygon(0 0, 100% 0, 98% 100%, 0% 100%)" }}>
               <input
                 type="file"
@@ -164,7 +164,7 @@ export default function CreateAuction() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-xs font-bold text-p3-cyan uppercase tracking-widest opacity-80 mb-2">Commencement (Start)</label>
+              <label className="block text-xs font-bold text-p3-cyan uppercase tracking-widest opacity-80 mb-2">Start Date</label>
               <input
                 type="datetime-local"
                 name="start_time"
@@ -176,7 +176,7 @@ export default function CreateAuction() {
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-p3-cyan uppercase tracking-widest opacity-80 mb-2">Termination (End)</label>
+              <label className="block text-xs font-bold text-p3-cyan uppercase tracking-widest opacity-80 mb-2">End Date</label>
               <input
                 type="datetime-local"
                 name="end_time"
