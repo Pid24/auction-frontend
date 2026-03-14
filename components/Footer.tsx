@@ -35,12 +35,7 @@ export function Footer() {
               </li>
               <li>
                 <Link href="/profile" className="text-gray-400 hover:text-p3-white transition-colors">
-                  Operative Dossier
-                </Link>
-              </li>
-              <li>
-                <Link href="/admin" className="text-gray-400 hover:text-p3-white transition-colors">
-                  Admin Terminal
+                  Profile
                 </Link>
               </li>
             </ul>

@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import api from "@/services/api/axios";
@@ -28,11 +28,11 @@ export default function AuctionRoom({ params }: { params: Promise<any> }) {
   const [bidAmount, setBidAmount] = useState<number | string>("");
   const [message, setMessage] = useState<string>("");
 
-  // State khusus untuk menahan layar dan memunculkan notifikasi instan
   const [isHalted, setIsHalted] = useState(false);
   const [localWinNotif, setLocalWinNotif] = useState<string>("");
 
   const echo = useEcho();
+  const prevEndTimeRef = useRef<string | null>(null);
 
   useEffect(() => {
     fetchAuction();
@@ -42,8 +42,8 @@ export default function AuctionRoom({ params }: { params: Promise<any> }) {
   const fetchAuction = async () => {
     try {
       const [auctionRes, userRes] = await Promise.all([api.get(`/auctions/${auctionId}`), api.get("/user")]);
-
       const data = auctionRes.data.data || auctionRes.data;
+
       setAuction(data);
       setBids(data.bids || []);
       setCurrentUser(userRes.data);
@@ -67,7 +67,7 @@ export default function AuctionRoom({ params }: { params: Promise<any> }) {
       setAuction((prev: any) => ({
         ...prev,
         current_price: e.auction.current_price,
-        end_time: e.auction.end_time,
+        end_time: e.auction.end_time, // Injeksi end_time dinamis dari WebSocket
       }));
 
       if (e.bid) {
@@ -85,18 +85,31 @@ export default function AuctionRoom({ params }: { params: Promise<any> }) {
     };
   }, [echo, auctionId]);
 
-  // Efek ini akan berjalan otomatis sesaat setelah CountdownTimer melaporkan waktu habis
+  // DETEKTOR PROTOKOL ANTI-SNIPING
+  useEffect(() => {
+    if (auction?.end_time) {
+      // Jika waktu berubah dan menjadi lebih besar dari waktu sebelumnya
+      if (prevEndTimeRef.current && new Date(auction.end_time) > new Date(prevEndTimeRef.current)) {
+        setMessage("[SYSTEM] ANTI-SNIPING PROTOCOL ENGAGED: WAKTU DIPERPANJANG.");
+        setIsHalted(false); // Lepas status halt jika sempat terkunci
+      }
+      prevEndTimeRef.current = auction.end_time;
+    }
+  }, [auction?.end_time]);
+
+  // Penguncian Callback untuk mencegah memory leak pada Timer
+  const handleTimerExpire = useCallback(() => {
+    setIsHalted(true);
+  }, []);
+
   useEffect(() => {
     if (isHalted && auction) {
-      // Validasi apakah kamu adalah pemenang tertinggi saat ini
       if (bids.length > 0 && currentUser && bids[0].user_id === currentUser.id) {
         setLocalWinNotif(`OPERATION CONCLUDED: Anda mengamankan aset "${auction.title}". Menunggu pemotongan Escrow mutlak...`);
-        // Tahan layarnya 5 detik biar kamu bisa baca notifnya, baru lempar ke Dasbor
         setTimeout(() => {
           router.push("/");
         }, 5000);
       } else {
-        // Kalau bukan pemenang atau tidak ada bid, lempar lebih cepat (2 detik)
         setTimeout(() => {
           router.push("/");
         }, 2000);
@@ -231,7 +244,8 @@ export default function AuctionRoom({ params }: { params: Promise<any> }) {
                   {auction.status === "closed" ? (
                     <span className="text-xl font-black italic text-gray-500 tracking-widest">HALTED</span>
                   ) : (
-                    <CountdownTimer targetDate={auction.status === "pending" ? auction.start_time : auction.end_time} onExpire={() => setIsHalted(true)} />
+                    // Injeksi useCallback handler kemari
+                    <CountdownTimer targetDate={auction.status === "pending" ? auction.start_time : auction.end_time} onExpire={handleTimerExpire} />
                   )}
                 </div>
               </div>
@@ -264,7 +278,7 @@ export default function AuctionRoom({ params }: { params: Promise<any> }) {
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={`mt-4 p-3 font-bold text-center tracking-wider italic uppercase border-l-4 ${message.includes("ACCEPTED") ? "bg-p3-cyan/20 border-p3-cyan text-p3-cyan" : "bg-red-900/40 border-red-500 text-red-400"}`}
+                className={`mt-4 p-3 font-bold text-center tracking-wider italic uppercase border-l-4 ${message.includes("ACCEPTED") ? "bg-p3-cyan/20 border-p3-cyan text-p3-cyan" : message.includes("ANTI-SNIPING") ? "bg-yellow-400/20 border-yellow-400 text-yellow-400" : "bg-red-900/40 border-red-500 text-red-400"}`}
               >
                 {message}
               </motion.div>
@@ -305,7 +319,6 @@ export default function AuctionRoom({ params }: { params: Promise<any> }) {
         </div>
       </div>
 
-      {/* INJEKSI NOTIFIKASI INSTAN SAAT "HALTED" */}
       <AnimatePresence>
         {localWinNotif && (
           <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3 font-sans max-w-sm">

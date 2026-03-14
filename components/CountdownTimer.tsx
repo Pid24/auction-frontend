@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 interface CountdownProps {
   targetDate: string;
-  onExpire?: () => void; // Fungsi pelaporan ke halaman induk
+  onExpire?: () => void;
 }
 
 export function CountdownTimer({ targetDate, onExpire }: CountdownProps) {
@@ -12,27 +12,18 @@ export function CountdownTimer({ targetDate, onExpire }: CountdownProps) {
   const [isCritical, setIsCritical] = useState<boolean>(false);
 
   useEffect(() => {
-    let hasExpired = false;
+    // Kunci target mutlak
+    const target = new Date(targetDate).getTime();
 
     const calculateTime = () => {
-      if (hasExpired) return false;
-
       const now = new Date().getTime();
-      const target = new Date(targetDate).getTime();
       const distance = target - now;
 
-      // Saat waktu menyentuh 0
       if (distance <= 0) {
         setTimeLeft("HALTED");
         setIsCritical(false);
-        hasExpired = true;
-
-        // Laporkan ke halaman induk bahwa waktu sudah habis
-        if (onExpire) {
-          onExpire();
-        }
-
-        return false;
+        if (onExpire) onExpire();
+        return false; // Menghentikan loop
       }
 
       const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
@@ -42,12 +33,13 @@ export function CountdownTimer({ targetDate, onExpire }: CountdownProps) {
       const format = (num: number) => num.toString().padStart(2, "0");
       setTimeLeft(`${format(hours)}:${format(minutes)}:${format(seconds)}`);
 
-      setIsCritical(distance <= 120000);
+      setIsCritical(distance <= 120000); // Kritis di bawah 2 menit
       return true;
     };
 
-    const shouldContinue = calculateTime();
-    if (!shouldContinue) return;
+    // Validasi eksekusi awal sebelum masuk interval
+    const isActive = calculateTime();
+    if (!isActive) return;
 
     const timer = setInterval(() => {
       const active = calculateTime();
