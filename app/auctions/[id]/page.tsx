@@ -2,18 +2,19 @@
 
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import api from "@/services/api/axios";
 import { useEcho } from "@/components/providers/EchoProvider";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { motion, AnimatePresence } from "framer-motion";
 
-// Sesuaikan URL ini dengan port peladen Laravel Anda jika berbeda
 const STORAGE_URL = process.env.NEXT_PUBLIC_BACKEND_URL ? `${process.env.NEXT_PUBLIC_BACKEND_URL}/storage` : "http://localhost:8000/storage";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default function AuctionRoom({ params }: { params: Promise<any> }) {
   const resolvedParams = use(params);
   const auctionId = resolvedParams.id;
+  const router = useRouter();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [auction, setAuction] = useState<any>(null);
@@ -21,9 +22,15 @@ export default function AuctionRoom({ params }: { params: Promise<any> }) {
   const [bids, setBids] = useState<any[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [activeImage, setActiveImage] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   const [bidAmount, setBidAmount] = useState<number | string>("");
   const [message, setMessage] = useState<string>("");
+
+  // State khusus untuk menahan layar dan memunculkan notifikasi instan
+  const [isHalted, setIsHalted] = useState(false);
+  const [localWinNotif, setLocalWinNotif] = useState<string>("");
 
   const echo = useEcho();
 
@@ -34,12 +41,13 @@ export default function AuctionRoom({ params }: { params: Promise<any> }) {
 
   const fetchAuction = async () => {
     try {
-      const response = await api.get(`/auctions/${auctionId}`);
-      const data = response.data.data || response.data;
+      const [auctionRes, userRes] = await Promise.all([api.get(`/auctions/${auctionId}`), api.get("/user")]);
+
+      const data = auctionRes.data.data || auctionRes.data;
       setAuction(data);
       setBids(data.bids || []);
+      setCurrentUser(userRes.data);
 
-      // Tetapkan gambar utama (primary) atau gambar pertama sebagai default saat dimuat
       if (data.media && data.media.length > 0) {
         const primaryImage = data.media.find((m: any) => m.is_primary) || data.media[0];
         setActiveImage(primaryImage);
@@ -59,6 +67,7 @@ export default function AuctionRoom({ params }: { params: Promise<any> }) {
       setAuction((prev: any) => ({
         ...prev,
         current_price: e.auction.current_price,
+        end_time: e.auction.end_time,
       }));
 
       if (e.bid) {
@@ -75,6 +84,25 @@ export default function AuctionRoom({ params }: { params: Promise<any> }) {
       echo.leaveChannel(`auction.${auctionId}`);
     };
   }, [echo, auctionId]);
+
+  // Efek ini akan berjalan otomatis sesaat setelah CountdownTimer melaporkan waktu habis
+  useEffect(() => {
+    if (isHalted && auction) {
+      // Validasi apakah kamu adalah pemenang tertinggi saat ini
+      if (bids.length > 0 && currentUser && bids[0].user_id === currentUser.id) {
+        setLocalWinNotif(`OPERATION CONCLUDED: Anda mengamankan aset "${auction.title}". Menunggu pemotongan Escrow mutlak...`);
+        // Tahan layarnya 5 detik biar kamu bisa baca notifnya, baru lempar ke Dasbor
+        setTimeout(() => {
+          router.push("/");
+        }, 5000);
+      } else {
+        // Kalau bukan pemenang atau tidak ada bid, lempar lebih cepat (2 detik)
+        setTimeout(() => {
+          router.push("/");
+        }, 2000);
+      }
+    }
+  }, [isHalted, auction, bids, currentUser, router]);
 
   const handleBid = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,7 +131,6 @@ export default function AuctionRoom({ params }: { params: Promise<any> }) {
 
   return (
     <div className="min-h-screen bg-p3-dark font-sans relative overflow-hidden pb-20 pt-10 px-6">
-      {/* Background Ornament */}
       <div className="fixed top-0 right-0 w-1/2 h-screen bg-p3-blue/10 pointer-events-none z-0" style={{ clipPath: "polygon(30% 0, 100% 0, 100% 100%, 0% 100%)" }} />
 
       <div className="max-w-7xl mx-auto relative z-10 mb-6">
@@ -119,17 +146,14 @@ export default function AuctionRoom({ params }: { params: Promise<any> }) {
       </div>
 
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 relative z-10">
-        {/* LEFT COLUMN: Item Info & Gallery */}
         <div className="lg:col-span-7 flex flex-col gap-6">
           <motion.div initial={{ x: -50, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="bg-p3-dark/60 border border-p3-blue p-8 relative" style={{ clipPath: "polygon(0 0, 100% 0, 100% 95%, 95% 100%, 0 100%)" }}>
             <div className="absolute top-0 left-0 w-2 h-full bg-p3-cyan" />
 
             <h1 className="text-4xl md:text-5xl font-black italic tracking-widest text-p3-white uppercase mb-6 drop-shadow-md">{auction.title}</h1>
 
-            {/* Visual Asset Gallery */}
             {auction.media && auction.media.length > 0 && (
               <div className="mb-8 border-b border-p3-blue/50 pb-8">
-                {/* Main Render Image */}
                 <div className="relative w-full aspect-video bg-p3-blue/10 border-2 border-p3-blue mb-4 overflow-hidden group" style={{ clipPath: "polygon(0 0, 100% 0, 100% 92%, 95% 100%, 0 100%)" }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={`${STORAGE_URL}/${activeImage.file_path}`} alt="Asset Primary" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
@@ -138,7 +162,6 @@ export default function AuctionRoom({ params }: { params: Promise<any> }) {
                   </div>
                 </div>
 
-                {/* Thumbnail Grid */}
                 {auction.media.length > 1 && (
                   <div className="flex gap-4 overflow-x-auto custom-scrollbar pb-2">
                     {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
@@ -164,7 +187,6 @@ export default function AuctionRoom({ params }: { params: Promise<any> }) {
             <p className="text-gray-400 text-lg leading-relaxed whitespace-pre-wrap">{auction.description}</p>
           </motion.div>
 
-          {/* Winner Banner */}
           <AnimatePresence>
             {auction.status === "closed" && (
               <motion.div
@@ -188,9 +210,7 @@ export default function AuctionRoom({ params }: { params: Promise<any> }) {
           </AnimatePresence>
         </div>
 
-        {/* RIGHT COLUMN: Action Panel */}
         <div className="lg:col-span-5 flex flex-col gap-6">
-          {/* Status & Price Card */}
           <motion.div initial={{ y: -50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="bg-p3-dark/80 border border-p3-blue p-6 relative shadow-blue-glow" style={{ clipPath: "polygon(5% 0, 100% 0, 100% 100%, 0% 100%)" }}>
             <div className="flex justify-between items-start mb-6 border-b border-p3-blue/50 pb-4">
               <div>
@@ -208,28 +228,31 @@ export default function AuctionRoom({ params }: { params: Promise<any> }) {
                 </span>
                 <div className="text-right">
                   <span className="block text-xs text-p3-cyan uppercase tracking-widest opacity-80 mb-1 font-bold">{auction.status === "pending" ? "COMMENCES IN" : auction.status === "active" ? "TERMINATES IN" : "STATUS"}</span>
-                  {auction.status === "closed" ? <span className="text-xl font-black italic text-gray-500 tracking-widest">HALTED</span> : <CountdownTimer targetDate={auction.status === "pending" ? auction.start_time : auction.end_time} />}
+                  {auction.status === "closed" ? (
+                    <span className="text-xl font-black italic text-gray-500 tracking-widest">HALTED</span>
+                  ) : (
+                    <CountdownTimer targetDate={auction.status === "pending" ? auction.start_time : auction.end_time} onExpire={() => setIsHalted(true)} />
+                  )}
                 </div>
               </div>
             </div>
 
-            {/* Bidding Form */}
             <form onSubmit={handleBid} className="flex flex-col gap-4">
               <input
                 type="number"
                 value={bidAmount}
                 onChange={(e) => setBidAmount(e.target.value)}
-                placeholder={`MIN: Rp ${(Number(auction.current_price) + 1).toLocaleString("id-ID")}`}
+                placeholder={`MIN: Rp ${(Number(auction.current_price) + 10000).toLocaleString("id-ID")}`}
                 className="w-full bg-transparent border-2 border-p3-blue text-p3-white p-4 font-bold text-lg placeholder-p3-blue/50 focus:outline-none focus:border-p3-cyan focus:shadow-cyan-glow transition-all"
                 required
-                disabled={auction.status !== "active"}
+                disabled={auction.status !== "active" || isHalted}
                 style={{ clipPath: "polygon(2% 0, 100% 0, 98% 100%, 0% 100%)" }}
               />
               <motion.button
                 type="submit"
-                disabled={auction.status !== "active"}
-                whileHover={auction.status === "active" ? { scale: 1.02, filter: "drop-shadow(0 0 10px var(--color-p3-cyan))" } : {}}
-                whileTap={auction.status === "active" ? { scale: 0.98 } : {}}
+                disabled={auction.status !== "active" || isHalted}
+                whileHover={auction.status === "active" && !isHalted ? { scale: 1.02, filter: "drop-shadow(0 0 10px var(--color-p3-cyan))" } : {}}
+                whileTap={auction.status === "active" && !isHalted ? { scale: 0.98 } : {}}
                 className="w-full bg-p3-blue text-p3-white py-4 font-black italic tracking-widest uppercase disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed transition-colors"
                 style={{ clipPath: "polygon(5% 0, 100% 0, 95% 100%, 0% 100%)" }}
               >
@@ -248,7 +271,6 @@ export default function AuctionRoom({ params }: { params: Promise<any> }) {
             )}
           </motion.div>
 
-          {/* History Panel */}
           <motion.div
             initial={{ x: 50, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
@@ -282,6 +304,23 @@ export default function AuctionRoom({ params }: { params: Promise<any> }) {
           </motion.div>
         </div>
       </div>
+
+      {/* INJEKSI NOTIFIKASI INSTAN SAAT "HALTED" */}
+      <AnimatePresence>
+        {localWinNotif && (
+          <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3 font-sans max-w-sm">
+            <motion.div
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-p3-blue/90 border-l-4 border-p3-cyan shadow-cyan-glow text-p3-white px-6 py-4 font-black italic uppercase tracking-widest text-xs"
+              style={{ clipPath: "polygon(0 0, 100% 0, 100% 85%, 95% 100%, 0 100%)" }}
+            >
+              {localWinNotif}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
