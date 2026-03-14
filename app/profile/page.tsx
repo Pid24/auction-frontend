@@ -13,6 +13,12 @@ export default function Profile() {
   const [activeTab, setActiveTab] = useState<"wallet" | "my_auctions" | "my_bids" | "won_auctions">("wallet");
   const router = useRouter();
 
+  // STATE MODUL DEPOSIT
+  const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
+  const [depositAmount, setDepositAmount] = useState<number | string>("");
+  const [depositMessage, setDepositMessage] = useState("");
+  const [isDepositing, setIsDepositing] = useState(false);
+
   useEffect(() => {
     fetchProfile();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -27,6 +33,41 @@ export default function Profile() {
       router.push("/login");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDeposit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsDepositing(true);
+    setDepositMessage("PROCESSING INJECTION...");
+
+    try {
+      const response = await api.post("/wallet/deposit", {
+        amount: Number(depositAmount),
+      });
+
+      // Sinkronisasi mutlak: Perbarui state dompet secara real-time tanpa refresh
+      setProfileData((prev: any) => ({
+        ...prev,
+        user: {
+          ...prev.user,
+          wallet: response.data.wallet,
+        },
+      }));
+
+      setDepositMessage("FUNDS INJECTED SUCCESSFULLY.");
+
+      // Tutup modal secara otomatis setelah 2 detik
+      setTimeout(() => {
+        setIsDepositModalOpen(false);
+        setDepositAmount("");
+        setDepositMessage("");
+      }, 2000);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      setDepositMessage(error.response?.data?.message || "TRANSACTION FAILED.");
+    } finally {
+      setIsDepositing(false);
     }
   };
 
@@ -45,11 +86,9 @@ export default function Profile() {
 
   return (
     <div className="min-h-screen bg-p3-dark font-sans relative overflow-hidden pt-16 pb-20 px-6">
-      {/* Background Ornament */}
       <div className="fixed top-0 right-0 w-1/3 h-screen bg-p3-blue/10 pointer-events-none z-0" style={{ clipPath: "polygon(30% 0, 100% 0, 100% 100%, 0% 100%)" }} />
 
       <div className="max-w-6xl mx-auto relative z-10">
-        {/* Header / Navigation */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6 border-b-2 border-p3-cyan pb-6">
           <motion.div initial={{ x: -50, opacity: 0 }} animate={{ x: 0, opacity: 1 }}>
             <h1 className="text-4xl font-black italic tracking-widest text-p3-white uppercase drop-shadow-md mb-3">
@@ -77,7 +116,6 @@ export default function Profile() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* LEFT PANEL: Navigasi Tab */}
           <motion.div initial={{ x: -30, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.1 }} className="lg:col-span-4 flex flex-col gap-3">
             {[
               { id: "wallet", label: "Financial Ledger" },
@@ -99,7 +137,6 @@ export default function Profile() {
             ))}
           </motion.div>
 
-          {/* RIGHT PANEL: Area Konten Dinamis */}
           <motion.div
             initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -111,10 +148,24 @@ export default function Profile() {
 
             <AnimatePresence mode="wait">
               <motion.div key={activeTab} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }} className="flex flex-col h-full">
-                {/* MODUL 1: DOMPET & MUTASI */}
+                {/* MODUL 1: DOMPET & MUTASI (Dengan Tombol Top-Up) */}
                 {activeTab === "wallet" && (
                   <>
-                    <h2 className="text-2xl font-black italic tracking-widest text-p3-white uppercase mb-4 border-b border-p3-blue/50 pb-2">Financial Ledger</h2>
+                    <div className="flex justify-between items-center mb-4 border-b border-p3-blue/50 pb-2">
+                      <h2 className="text-2xl font-black italic tracking-widest text-p3-white uppercase">Financial Ledger</h2>
+
+                      {/* TOMBOL PEMICU INJEKSI DANA */}
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setIsDepositModalOpen(true)}
+                        className="bg-p3-cyan text-p3-dark px-4 py-2 font-black italic tracking-widest text-sm uppercase shadow-cyan-glow transition-colors hover:bg-white"
+                        style={{ clipPath: "polygon(10% 0, 100% 0, 90% 100%, 0% 100%)" }}
+                      >
+                        + INJECT FUNDS
+                      </motion.button>
+                    </div>
+
                     <div className="grid grid-cols-2 gap-4 mb-6">
                       <div className="bg-p3-blue/10 border border-p3-cyan p-4" style={{ clipPath: "polygon(0 0, 100% 0, 95% 100%, 0% 100%)" }}>
                         <span className="block text-xs text-p3-cyan uppercase tracking-widest font-bold mb-1">Available Funds</span>
@@ -133,7 +184,11 @@ export default function Profile() {
                         wallet.transactions.map((trx: any) => (
                           <div key={trx.id} className="flex justify-between items-center bg-p3-blue/5 p-3 border-l-2 border-p3-blue hover:bg-p3-blue/10 transition-colors">
                             <div>
-                              <span className={`font-black italic uppercase tracking-wider text-sm ${trx.type === "payment" ? "text-red-400" : trx.type === "refund" ? "text-green-400" : "text-yellow-400"}`}>{trx.type}</span>
+                              <span
+                                className={`font-black italic uppercase tracking-wider text-sm ${trx.type === "payment" ? "text-red-400" : trx.type === "deposit" ? "text-p3-cyan" : trx.type === "refund" ? "text-green-400" : "text-yellow-400"}`}
+                              >
+                                {trx.type}
+                              </span>
                               <span className="block text-xs text-gray-500 font-mono mt-1">{new Date(trx.created_at).toLocaleString("id-ID")}</span>
                             </div>
                             <span className={`font-bold ${trx.type === "payment" ? "text-red-400" : "text-p3-white"}`}>
@@ -248,6 +303,77 @@ export default function Profile() {
           </motion.div>
         </div>
       </div>
+
+      {/* MODAL INJEKSI DANA (MOCK TOP-UP) */}
+      <AnimatePresence>
+        {isDepositModalOpen && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ scale: 0.9, y: 50 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 50 }}
+              className="bg-p3-dark border-2 border-p3-cyan p-8 w-full max-w-md relative shadow-cyan-glow"
+              style={{ clipPath: "polygon(0 0, 100% 0, 100% 90%, 90% 100%, 0 100%)" }}
+            >
+              <div className="absolute top-0 left-0 w-2 h-full bg-p3-cyan" />
+              <button
+                onClick={() => {
+                  setIsDepositModalOpen(false);
+                  setDepositMessage("");
+                  setDepositAmount("");
+                }}
+                className="absolute top-4 right-4 text-p3-cyan hover:text-white font-black"
+              >
+                X
+              </button>
+
+              <h2 className="text-3xl font-black italic tracking-widest text-p3-white uppercase mb-2">
+                Fund <span className="text-p3-cyan">Injection</span>
+              </h2>
+              <p className="text-xs text-gray-400 font-mono mb-6 uppercase tracking-wider">Authorize local deposit to Virtual Ledger.</p>
+
+              <form onSubmit={handleDeposit} className="flex flex-col gap-4">
+                <div>
+                  <label className="block text-xs text-p3-cyan uppercase tracking-widest font-bold mb-2">Injection Amount (IDR)</label>
+                  <input
+                    type="number"
+                    value={depositAmount}
+                    onChange={(e) => setDepositAmount(e.target.value)}
+                    placeholder="Min: 10000"
+                    min="10000"
+                    max="100000000"
+                    required
+                    disabled={isDepositing}
+                    className="w-full bg-p3-blue/10 border-2 border-p3-blue text-p3-white p-4 font-bold text-lg placeholder-p3-blue/50 focus:outline-none focus:border-p3-cyan focus:shadow-cyan-glow transition-all"
+                    style={{ clipPath: "polygon(2% 0, 100% 0, 98% 100%, 0% 100%)" }}
+                  />
+                </div>
+
+                <motion.button
+                  type="submit"
+                  disabled={isDepositing}
+                  whileHover={!isDepositing ? { scale: 1.02 } : {}}
+                  whileTap={!isDepositing ? { scale: 0.98 } : {}}
+                  className="w-full mt-4 bg-p3-cyan text-p3-dark py-4 font-black italic tracking-widest uppercase disabled:bg-gray-800 disabled:text-gray-500 transition-colors"
+                  style={{ clipPath: "polygon(5% 0, 100% 0, 95% 100%, 0% 100%)" }}
+                >
+                  {isDepositing ? "AUTHORIZING..." : "EXECUTE INJECTION"}
+                </motion.button>
+              </form>
+
+              {depositMessage && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`mt-4 p-3 font-bold text-center tracking-wider italic uppercase border-l-4 text-xs ${depositMessage.includes("SUCCESSFULLY") ? "bg-p3-cyan/20 border-p3-cyan text-p3-cyan" : "bg-red-900/40 border-red-500 text-red-400"}`}
+                >
+                  {depositMessage}
+                </motion.div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
