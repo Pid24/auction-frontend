@@ -1,19 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import api from "@/services/api/axios";
 import { motion } from "framer-motion";
 
-export default function Dashboard() {
+function DashboardContent() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [auctions, setAuctions] = useState<any[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [categories, setCategories] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
+
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const searchQuery = searchParams.get("search") || "";
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
@@ -25,8 +28,8 @@ export default function Dashboard() {
   }, [router]);
 
   useEffect(() => {
-    fetchAuctions(selectedCategory);
-  }, [selectedCategory]);
+    fetchAuctions(selectedCategory, searchQuery);
+  }, [selectedCategory, searchQuery]);
 
   const fetchCategories = async () => {
     try {
@@ -37,10 +40,14 @@ export default function Dashboard() {
     }
   };
 
-  const fetchAuctions = async (categorySlug: string) => {
+  const fetchAuctions = async (categorySlug: string, search: string) => {
     setIsLoading(true);
     try {
-      const endpoint = categorySlug ? `/auctions?category=${categorySlug}` : "/auctions";
+      const params = new URLSearchParams();
+      if (categorySlug) params.append("category", categorySlug);
+      if (search) params.append("search", search);
+
+      const endpoint = params.toString() ? `/auctions?${params.toString()}` : "/auctions";
       const response = await api.get(endpoint);
       setAuctions(response.data.data || response.data);
     } catch (error) {
@@ -66,6 +73,16 @@ export default function Dashboard() {
       <div className="fixed top-0 right-0 w-2/3 h-screen bg-p3-blue/10 pointer-events-none z-0" style={{ clipPath: "polygon(20% 0, 100% 0, 100% 100%, 0% 100%)" }} />
 
       <div className="max-w-7xl mx-auto px-6 relative z-10">
+        {/* Indikator Pencarian Aktif */}
+        {searchQuery && (
+          <div className="mb-4 bg-p3-cyan/20 border-l-4 border-p3-cyan p-3 text-p3-cyan font-bold italic tracking-widest uppercase text-sm">
+            Searching for: "{searchQuery}"
+            <Link href="/" className="ml-4 text-p3-white hover:text-red-400 underline decoration-p3-cyan">
+              Clear Search
+            </Link>
+          </div>
+        )}
+
         {/* Category Filter Navigation */}
         <div className="mb-8 flex flex-wrap gap-3 border-b border-p3-blue/50 pb-4">
           <button
@@ -149,5 +166,21 @@ export default function Dashboard() {
         )}
       </div>
     </div>
+  );
+}
+
+// Mengunci komponen yang menggunakan useSearchParams ke dalam Suspense boundary
+// untuk menghindari peringatan statis di Next.js saat build time.
+export default function Dashboard() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-[80vh] flex items-center justify-center bg-p3-dark">
+          <div className="text-p3-cyan text-2xl font-black italic tracking-widest uppercase animate-pulse">Extracting Entities...</div>
+        </div>
+      }
+    >
+      <DashboardContent />
+    </Suspense>
   );
 }

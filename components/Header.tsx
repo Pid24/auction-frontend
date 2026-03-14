@@ -16,9 +16,9 @@ export function Header() {
   const [user, setUser] = useState<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [wallet, setWallet] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    // Jangan muat header di halaman login/register
     if (pathname === "/login" || pathname === "/register") return;
 
     const token = localStorage.getItem("access_token");
@@ -35,7 +35,6 @@ export function Header() {
     }
   };
 
-  // Sinkronisasi Dompet Global via WebSocket
   useEffect(() => {
     if (!echo || !user?.id) return;
 
@@ -53,11 +52,20 @@ export function Header() {
     router.push("/login");
   };
 
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/?search=${encodeURIComponent(searchQuery)}`);
+    } else {
+      router.push(`/`);
+    }
+  };
+
   if (pathname === "/login" || pathname === "/register") return null;
 
   return (
     <header className="relative z-50 w-full flex flex-col shadow-cyan-glow">
-      {/* TIER 1: UTILITY BAR (Top Bar) */}
+      {/* TIER 1: UTILITY BAR */}
       <div className="bg-p3-dark border-b border-p3-blue py-1 px-6 flex justify-between items-center text-[10px] font-black italic uppercase tracking-widest text-gray-400">
         <div className="flex gap-4"></div>
         <div className="flex gap-6 items-center">
@@ -79,19 +87,37 @@ export function Header() {
         </div>
       </div>
 
-      {/* TIER 2: MAIN NAVBAR (Bottom Bar) */}
+      {/* TIER 2: MAIN NAVBAR */}
       <div className="bg-p3-dark/90 backdrop-blur-md border-b border-p3-cyan py-4 px-6">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           {/* Logo & Identity */}
-          <motion.div initial={{ x: -30, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ duration: 0.4 }}>
+          <motion.div initial={{ x: -30, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ duration: 0.4 }} className="shrink-0">
             <Link href="/" className="block text-3xl md:text-4xl font-black italic tracking-widest text-p3-white uppercase drop-shadow-md hover:scale-105 transition-transform">
               <span className="text-p3-cyan">Auction</span>.OS
             </Link>
           </motion.div>
 
+          {/* Global Search Bar */}
+          <form onSubmit={handleSearch} className="flex-1 max-w-lg mx-4 relative hidden md:block">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search assets or entities..."
+              className="w-full bg-p3-blue/10 border-2 border-p3-blue text-p3-white px-4 py-2 font-bold placeholder-p3-blue/50 focus:outline-none focus:border-p3-cyan focus:shadow-cyan-glow transition-all"
+              style={{ clipPath: "polygon(2% 0, 100% 0, 98% 100%, 0% 100%)" }}
+            />
+            <button
+              type="submit"
+              className="absolute right-0 top-0 h-full px-6 bg-p3-blue text-p3-white font-black italic tracking-widest uppercase hover:bg-p3-cyan hover:text-p3-dark transition-colors"
+              style={{ clipPath: "polygon(15% 0, 100% 0, 100% 100%, 0% 100%)" }}
+            >
+              FIND
+            </button>
+          </form>
+
           {/* Navigation Control & Financial HUD */}
-          <motion.div initial={{ x: 30, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ duration: 0.4 }} className="flex flex-wrap gap-4 items-center justify-end">
-            {/* Financial Panel */}
+          <motion.div initial={{ x: 30, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ duration: 0.4 }} className="flex flex-wrap gap-4 items-center justify-end shrink-0">
             {wallet && (
               <div className="flex flex-col text-right mr-2 border-r border-p3-blue/50 pr-6">
                 <span className="text-[10px] font-bold text-p3-cyan uppercase tracking-widest opacity-80 mb-0.5">Available Funds</span>
@@ -100,7 +126,6 @@ export function Header() {
               </div>
             )}
 
-            {/* Navigation Buttons */}
             {user?.role === "admin" && (
               <Link
                 href="/admin"
