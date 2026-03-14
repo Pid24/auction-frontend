@@ -5,13 +5,19 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import api from "@/services/api/axios";
 import { motion } from "framer-motion";
+import { useEcho } from "@/components/providers/EchoProvider";
 
 export default function Dashboard() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [auctions, setAuctions] = useState<any[]>([]);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [userId, setUserId] = useState<number | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [wallet, setWallet] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+
   const router = useRouter();
+  const echo = useEcho();
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
@@ -23,16 +29,46 @@ export default function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Listener WebSocket Khusus Sinkronisasi Dompet
+  useEffect(() => {
+    if (!echo || !userId) return;
+
+    const channel = echo.private(`user.${userId}`);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    channel.listen(".auction.won", () => {
+      syncWallet();
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    channel.listen(".outbid.notification", () => {
+      syncWallet();
+    });
+
+    return () => {
+      echo.leaveChannel(`user.${userId}`);
+    };
+  }, [echo, userId]);
+
+  const syncWallet = async () => {
+    try {
+      const response = await api.get("/user");
+      setWallet(response.data.wallet);
+    } catch (error) {
+      console.error("Gagal menyinkronkan data dompet:", error);
+    }
+  };
+
   const initializeSystem = async () => {
     try {
-      // Eksekusi pemanggilan paralel untuk efisiensi waktu muat (load time)
       const [userResponse, auctionsResponse] = await Promise.all([api.get("/user"), api.get("/auctions")]);
 
+      setUserId(userResponse.data.id);
       setUserRole(userResponse.data.role);
+      setWallet(userResponse.data.wallet); // Menangkap entitas dompet
       setAuctions(auctionsResponse.data.data || auctionsResponse.data);
     } catch (error) {
       console.error("System initialization failed:", error);
-      // Jika token tidak valid atau kedaluwarsa, paksa keluar
       localStorage.removeItem("access_token");
       router.push("/login");
     } finally {
@@ -70,14 +106,22 @@ export default function Dashboard() {
           </motion.div>
 
           <motion.div initial={{ x: 30, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ duration: 0.4 }} className="flex flex-wrap gap-4 items-center justify-end">
-            {/* Render Tombol Overwatch Eksklusif untuk Administrator */}
+            {/* Financial HUD Panel */}
+            {wallet && (
+              <div className="flex flex-col text-right mr-2 border-r border-p3-blue/50 pr-6">
+                <span className="text-[10px] font-bold text-p3-cyan uppercase tracking-widest opacity-80 mb-0.5">Available Funds</span>
+                <span className="text-sm font-black italic text-p3-white tracking-widest drop-shadow-sm">Rp {Number(wallet.balance - wallet.frozen_balance).toLocaleString("id-ID")}</span>
+                {Number(wallet.frozen_balance) > 0 && <span className="text-[10px] font-bold text-red-400 tracking-widest mt-0.5">[HOLD: Rp {Number(wallet.frozen_balance).toLocaleString("id-ID")}]</span>}
+              </div>
+            )}
+
             {userRole === "admin" && (
               <Link
                 href="/admin"
                 className="px-6 py-2 bg-red-600/20 border-2 border-red-600 text-red-500 font-bold italic tracking-wider uppercase transition-all hover:bg-red-600 hover:text-p3-white shadow-[0_0_10px_rgba(220,38,38,0.5)]"
                 style={{ clipPath: "polygon(10% 0, 100% 0, 90% 100%, 0% 100%)" }}
               >
-                Admin
+                Overwatch
               </Link>
             )}
 
@@ -86,7 +130,7 @@ export default function Dashboard() {
               className="px-6 py-2 bg-p3-blue text-p3-white font-bold italic tracking-wider uppercase transition-all hover:bg-p3-cyan hover:text-p3-dark"
               style={{ clipPath: "polygon(10% 0, 100% 0, 90% 100%, 0% 100%)" }}
             >
-              Initialize Auction
+              Initialize
             </Link>
             <Link
               href="/profile"
@@ -120,7 +164,6 @@ export default function Dashboard() {
                 className="relative bg-p3-dark/80 border border-p3-blue flex flex-col group overflow-hidden"
                 style={{ clipPath: "polygon(0 0, 100% 0, 100% 85%, 90% 100%, 0 100%)" }}
               >
-                {/* Left Line Accent */}
                 <div className="absolute top-0 left-0 w-1 h-full bg-p3-cyan transition-transform origin-top scale-y-0 group-hover:scale-y-100 duration-300" />
 
                 <div className="p-6 flex-1 flex flex-col">
