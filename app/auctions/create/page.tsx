@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import api from "@/services/api/axios";
@@ -10,22 +10,37 @@ export default function CreateAuction() {
   const router = useRouter();
   const [formData, setFormData] = useState({
     title: "",
+    category_id: "",
     description: "",
     starting_price: "",
     start_time: "",
     end_time: "",
   });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [categories, setCategories] = useState<any[]>([]);
   const [images, setImages] = useState<File[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await api.get("/categories");
+      setCategories(response.data);
+    } catch (err) {
+      console.error("Failed to fetch categories", err);
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      // Mengonversi FileList menjadi Array standar
       setImages(Array.from(e.target.files));
     }
   };
@@ -36,15 +51,14 @@ export default function CreateAuction() {
     setError("");
 
     try {
-      // Konstruksi FormData untuk multipart/form-data
       const payload = new FormData();
       payload.append("title", formData.title);
+      payload.append("category_id", formData.category_id);
       payload.append("description", formData.description);
       payload.append("starting_price", formData.starting_price);
       payload.append("start_time", formData.start_time);
       payload.append("end_time", formData.end_time);
 
-      // Injeksi array gambar ke dalam payload
       images.forEach((image, index) => {
         payload.append(`images[${index}]`, image);
       });
@@ -105,17 +119,38 @@ export default function CreateAuction() {
           <div className="absolute top-0 left-0 w-1 h-full bg-p3-cyan" />
 
           <div>
-            <label className="block text-xs font-bold text-p3-cyan uppercase tracking-widest opacity-80 mb-2">Entity Name</label>
+            <label className="block text-xs font-bold text-p3-cyan uppercase tracking-widest opacity-80 mb-2">Item Name</label>
             <input
               type="text"
               name="title"
               value={formData.title}
               onChange={handleChange}
               className="w-full p-4 bg-p3-blue/10 border-b-2 border-p3-blue text-p3-white font-bold text-lg focus:outline-none focus:border-p3-cyan focus:bg-p3-blue/20 transition-all placeholder-p3-blue/50"
-              placeholder="Input asset identity..."
+              placeholder="Enter item name..."
               required
               style={{ clipPath: "polygon(0 0, 100% 0, 98% 100%, 0% 100%)" }}
             />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-p3-cyan uppercase tracking-widest opacity-80 mb-2">Category</label>
+            <select
+              name="category_id"
+              value={formData.category_id}
+              onChange={handleChange}
+              className="w-full p-4 bg-p3-blue/10 border-b-2 border-p3-blue text-p3-white font-bold text-lg focus:outline-none focus:border-p3-cyan focus:bg-p3-blue/20 transition-all cursor-pointer appearance-none"
+              required
+              style={{ clipPath: "polygon(0 0, 100% 0, 98% 100%, 0% 100%)" }}
+            >
+              <option value="" disabled className="bg-p3-dark text-gray-500">
+                Select a category
+              </option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id} className="bg-p3-dark text-p3-white">
+                  {cat.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>
@@ -126,15 +161,14 @@ export default function CreateAuction() {
               onChange={handleChange}
               rows={4}
               className="w-full p-4 bg-p3-blue/10 border-b-2 border-p3-blue text-p3-white font-bold focus:outline-none focus:border-p3-cyan focus:bg-p3-blue/20 transition-all placeholder-p3-blue/50 custom-scrollbar"
-              placeholder="Specify asset details..."
+              placeholder="Enter item description..."
               required
               style={{ clipPath: "polygon(0 0, 100% 0, 99% 100%, 0% 100%)" }}
             />
           </div>
 
-          {/* Sistem Upload Multi-Gambar */}
           <div>
-            <label className="block text-xs font-bold text-p3-cyan uppercase tracking-widest opacity-80 mb-2">Upload Image</label>
+            <label className="block text-xs font-bold text-p3-cyan uppercase tracking-widest opacity-80 mb-2">Upload Images</label>
             <div className="w-full p-4 bg-p3-blue/10 border-b-2 border-p3-blue text-p3-white font-bold focus-within:border-p3-cyan focus-within:bg-p3-blue/20 transition-all" style={{ clipPath: "polygon(0 0, 100% 0, 98% 100%, 0% 100%)" }}>
               <input
                 type="file"
@@ -143,12 +177,12 @@ export default function CreateAuction() {
                 onChange={handleImageChange}
                 className="w-full text-sm text-p3-white file:mr-4 file:py-2 file:px-6 file:rounded-none file:border-0 file:text-sm file:font-black file:italic file:uppercase file:tracking-widest file:bg-p3-blue file:text-p3-white hover:file:bg-p3-cyan hover:file:text-p3-dark file:transition-colors cursor-pointer"
               />
-              {images.length > 0 && <div className="mt-3 text-xs text-p3-cyan/80 font-mono">{images.length} file(s) attached for transmission.</div>}
+              {images.length > 0 && <div className="mt-3 text-xs text-p3-cyan/80 font-mono">{images.length} file(s) selected.</div>}
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-p3-cyan uppercase tracking-widest opacity-80 mb-2">Starting Value (IDR)</label>
+            <label className="block text-xs font-bold text-p3-cyan uppercase tracking-widest opacity-80 mb-2">Starting Price (IDR)</label>
             <input
               type="number"
               name="starting_price"
@@ -156,7 +190,7 @@ export default function CreateAuction() {
               onChange={handleChange}
               min="1"
               className="w-full p-4 bg-p3-blue/10 border-b-2 border-p3-blue text-p3-white font-bold text-lg focus:outline-none focus:border-p3-cyan focus:bg-p3-blue/20 transition-all placeholder-p3-blue/50"
-              placeholder="Example: 150000"
+              placeholder="e.g. 150000"
               required
               style={{ clipPath: "polygon(0 0, 100% 0, 98% 100%, 0% 100%)" }}
             />
@@ -198,17 +232,20 @@ export default function CreateAuction() {
               className="px-8 py-4 bg-transparent border-2 border-p3-cyan text-p3-cyan font-black italic uppercase tracking-widest transition-colors hover:bg-p3-cyan hover:text-p3-dark"
               style={{ clipPath: "polygon(10% 0, 100% 0, 90% 100%, 0% 100%)" }}
             >
-              Abort
+              CANCEL
             </motion.button>
             <motion.button
               type="submit"
               disabled={isLoading}
-              whileHover={{ scale: isLoading ? 1 : 1.05, filter: "drop-shadow(0 0 10px var(--color-p3-cyan))" }}
+              whileHover={{
+                scale: isLoading ? 1 : 1.05,
+                filter: "drop-shadow(0 0 10px var(--color-p3-cyan))",
+              }}
               whileTap={{ scale: isLoading ? 1 : 0.95 }}
               className="bg-p3-blue text-p3-white px-10 py-4 font-black italic uppercase tracking-widest disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed transition-colors"
               style={{ clipPath: "polygon(10% 0, 100% 0, 90% 100%, 0% 100%)" }}
             >
-              {isLoading ? "TRANSMITTING..." : "EXECUTE AUCTION"}
+              {isLoading ? "LOADING..." : "SUBMIT AUCTION"}
             </motion.button>
           </div>
         </motion.form>
